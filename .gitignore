@@ -1,4 +1,6 @@
 .env
+chroma_db/
+knowledge_base/
+translated_docs/
 __pycache__/
 *.pyc
-chroma_db/
