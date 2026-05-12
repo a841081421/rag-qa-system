@@ -20,12 +20,16 @@ def clone_repos(target_dir: str | None = None) -> list[Path]:
         repo_name = repo_url.split("/")[-1].replace(".git", "")
         repo_path = target / repo_name
 
-        if repo_path.exists():
-            subprocess.run(["git", "-C", str(repo_path), "pull"], check=True)
-        else:
-            subprocess.run(
-                ["git", "clone", "--depth", "1", repo_url, str(repo_path)], check=True
-            )
+        try:
+            if repo_path.exists():
+                subprocess.run(["git", "-C", str(repo_path), "pull"], check=True)
+            else:
+                subprocess.run(
+                    ["git", "clone", "--depth", "1", repo_url, str(repo_path)], check=True
+                )
+        except subprocess.CalledProcessError as e:
+            print(f"  警告: 仓库操作失败 {repo_name}: {e}")
+            continue
 
         md_files.extend(list(repo_path.rglob("*.md")))
 
