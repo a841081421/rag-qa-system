@@ -48,18 +48,34 @@ class RAG:
         total = 0
 
         for f in files:
-            n = self.ingest_file(f)
-            print(f"  入库: {f.name} -> {n} 个片段")
-            total += n
+            try:
+                n = self.ingest_file(f)
+                print(f"  入库: {f.name} -> {n} 个片段")
+                total += n
+            except Exception as e:
+                print(f"  入库失败: {f.name}: {e}")
+                continue
 
         return total
 
     def ask(self, question: str, top_k: int = 3) -> dict:
         """提问并获取回答，同时返回检索到的来源片段。"""
-        query_embedding = self.embedder.embed(question)
-        search_results = self.store.search(query_embedding, top_k=top_k)
+        try:
+            query_embedding = self.embedder.embed(question)
+            search_results = self.store.search(query_embedding, top_k=top_k)
+        except Exception as e:
+            raise RuntimeError(f"检索失败: {e}") from e
 
         contexts = search_results["documents"]
+
+        if not contexts:
+            return {
+                "answer": "知识库中暂无相关内容，请先导入文档后再提问。",
+                "contexts": [],
+                "sources": [],
+                "distances": [],
+            }
+
         answer = self.generator.generate(question, contexts)
 
         return {
