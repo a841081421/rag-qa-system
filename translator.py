@@ -1,3 +1,5 @@
+"""Translate English Markdown files to Chinese via DeepSeek API."""
+
 from pathlib import Path
 from openai import OpenAI
 from config import DEEPSEEK_API_KEY, DEEPSEEK_BASE_URL, TRANSLATED_DIR
@@ -10,11 +12,12 @@ TRANSLATION_PROMPT = """你是一个技术文档翻译专家。请将以下英�
 1. 保持技术术语的准确性（如 Agent、Tool Use、Prompt Engineering 等保留英文原词或使用业界通用译法）
 2. 代码块保持原样不翻译
 3. Markdown 格式（标题、列表、链接、代码块）完整保留
-4. 翻译结果流畅自然，符合中文技术文档的阅读习惯
+4. YAML frontmatter（--- 包裹的部分）不翻译
+5. 翻译结果流畅自然，符合中文技术文档的阅读习惯
 
 英文原文：
 
-{text}
+__TEXT__
 
 中文翻译："""
 
@@ -24,17 +27,20 @@ def translate_text(text: str) -> str:
     if not text.strip():
         return text
 
+    prompt = TRANSLATION_PROMPT.replace("__TEXT__", text)
+
     response = client.chat.completions.create(
         model="deepseek-chat",
-        messages=[{"role": "user", "content": TRANSLATION_PROMPT.format(text=text)}],
+        messages=[{"role": "user", "content": prompt}],
         temperature=0.3,
-        max_tokens=4096,
+        max_tokens=8192,
     )
     return response.choices[0].message.content
 
 
-def translate_file(file_path: Path, output_dir: str | None = None) -> Path:
+def translate_file(file_path: str | Path, output_dir: str | Path | None = None) -> Path:
     """翻译单个 Markdown 文件，保存到输出目录。"""
+    file_path = Path(file_path)
     output = Path(output_dir or TRANSLATED_DIR)
     output.mkdir(parents=True, exist_ok=True)
 
@@ -47,17 +53,21 @@ def translate_file(file_path: Path, output_dir: str | None = None) -> Path:
     return out_path
 
 
-def translate_directory(input_dir: str | None = None, output_dir: str | None = None) -> list[Path]:
+def translate_directory(input_dir: str | Path | None = None, output_dir: str | Path | None = None) -> list[Path]:
     """翻译目录下所有 Markdown 文件。"""
-    input_path = Path(input_dir)
+    input_path = Path(input_dir) if input_dir else Path.cwd()
     output_path = Path(output_dir or TRANSLATED_DIR)
 
     md_files = list(input_path.rglob("*.md"))
     results = []
 
     for f in md_files:
-        out = translate_file(f, output_dir=str(output_path))
-        results.append(out)
-        print(f"  翻译完成: {f.name} → {out.name}")
+        try:
+            out = translate_file(f, output_dir=output_path)
+            results.append(out)
+            print(f"  翻译完成: {f.name} -> {out.name}")
+        except Exception as e:
+            print(f"  翻译失败: {f.name}: {e}")
+            continue
 
     return results
