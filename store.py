@@ -1,3 +1,5 @@
+"""ChromaDB vector store with cosine distance."""
+
 import chromadb
 from config import CHROMA_PERSIST_DIR
 
@@ -12,7 +14,10 @@ class VectorStore:
     @property
     def collection(self):
         if self._collection is None:
-            self._collection = self.client.get_or_create_collection(name=self.collection_name)
+            self._collection = self.client.get_or_create_collection(
+                name=self.collection_name,
+                metadata={"hnsw:space": "cosine"},
+            )
         return self._collection
 
     def add_documents(
@@ -22,11 +27,9 @@ class VectorStore:
         embeddings: list[list[float]],
         metadatas: list[dict] | None = None,
     ) -> None:
-        """批量存入文档、向量和元数据。"""
-        self.collection.add(ids=ids, documents=documents, embeddings=embeddings, metadatas=metadatas)
+        self.collection.upsert(ids=ids, documents=documents, embeddings=embeddings, metadatas=metadatas)
 
-    def search(self, query_embedding: list[float], top_k: int = 3) -> dict:
-        """检索最相似的 top_k 个文档片段。"""
+    def search(self, query_embedding: list[float], top_k: int = 10) -> dict:
         results = self.collection.query(query_embeddings=[query_embedding], n_results=top_k)
         return {
             "ids": results["ids"][0],
@@ -36,10 +39,8 @@ class VectorStore:
         }
 
     def count(self) -> int:
-        """返回已存储的文档数量。"""
         return self.collection.count()
 
     def clear(self) -> None:
-        """清空集合。"""
         self.client.delete_collection(name=self.collection_name)
         self._collection = None

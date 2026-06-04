@@ -1,5 +1,6 @@
 .env
 chroma_db/
+bm25_index.json
 knowledge_base/
 translated_docs/
 __pycache__/
