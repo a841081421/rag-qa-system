@@ -13,6 +13,7 @@ class AskRequest(BaseModel):
     top_k: int = Field(default=3, ge=1, le=20)
     history: list[Message] = Field(default_factory=list)
     use_reranker: bool = Field(default=True)
+    images: list[str] = Field(default_factory=list)
 
 
 class AskResponse(BaseModel):

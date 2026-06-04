@@ -100,6 +100,7 @@ class RAG:
         top_k: int = 3,
         history: list[dict] | None = None,
         use_reranker: bool = True,
+        images: list[str] | None = None,
     ) -> dict:
         results = self.retrieve(question, top_k=top_k, use_reranker=use_reranker)
 
@@ -113,7 +114,7 @@ class RAG:
             }
 
         contexts = [r["document"] for r in results]
-        answer = self.generator.generate(question, contexts, history=history)
+        answer = self.generator.generate(question, contexts, history=history, images=images)
 
         return {
             "answer": answer,
@@ -129,13 +130,14 @@ class RAG:
         top_k: int = 3,
         history: list[dict] | None = None,
         use_reranker: bool = True,
+        images: list[str] | None = None,
     ) -> Generator[str, None, None]:
         results = self.retrieve(question, top_k=top_k, use_reranker=use_reranker)
         if not results:
             yield "知识库中暂无相关内容，请先导入文档后再提问。"
             return
         contexts = [r["document"] for r in results]
-        yield from self.generator.generate_stream(question, contexts, history=history)
+        yield from self.generator.generate_stream(question, contexts, history=history, images=images)
 
     def ask_json(
         self,
@@ -143,6 +145,7 @@ class RAG:
         top_k: int = 3,
         history: list[dict] | None = None,
         use_reranker: bool = True,
+        images: list[str] | None = None,
     ) -> dict:
         results = self.retrieve(question, top_k=top_k, use_reranker=use_reranker)
         if not results:
@@ -153,6 +156,6 @@ class RAG:
                 "sources": [],
             }
         contexts = [r["document"] for r in results]
-        result = self.generator.generate_json(question, contexts, history=history)
+        result = self.generator.generate_json(question, contexts, history=history, images=images)
         result["sources"] = [r["source"] for r in results]
         return result

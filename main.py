@@ -68,6 +68,9 @@ def _get_rag() -> RAG:
     return rag
 
 
+MAX_IMAGES = 3
+
+
 # ── Static frontend ──
 
 STATIC_DIR = Path(__file__).parent / "static"
@@ -132,12 +135,16 @@ async def clear_documents():
 @app.post("/api/ask", response_model=AskResponse)
 async def ask(req: AskRequest):
     r = _get_rag()
+    if len(req.images) > MAX_IMAGES:
+        raise HTTPException(status_code=422, detail=f"最多支持 {MAX_IMAGES} 张图片")
     history = [h.model_dump() for h in req.history] if req.history else None
+    images = req.images or None
     result = r.ask(
         question=req.question,
         top_k=req.top_k,
         history=history,
         use_reranker=req.use_reranker,
+        images=images,
     )
     return AskResponse(**result)
 
@@ -147,7 +154,10 @@ async def ask(req: AskRequest):
 @app.post("/api/ask/stream")
 async def ask_stream(req: AskRequest):
     r = _get_rag()
+    if len(req.images) > MAX_IMAGES:
+        raise HTTPException(status_code=422, detail=f"最多支持 {MAX_IMAGES} 张图片")
     history = [h.model_dump() for h in req.history] if req.history else None
+    images = req.images or None
 
     def event_stream():
         try:
@@ -156,6 +166,7 @@ async def ask_stream(req: AskRequest):
                 top_k=req.top_k,
                 history=history,
                 use_reranker=req.use_reranker,
+                images=images,
             ):
                 data = json.dumps({"token": token}, ensure_ascii=False)
                 yield f"data: {data}\n\n"
@@ -171,12 +182,16 @@ async def ask_stream(req: AskRequest):
 @app.post("/api/ask/json", response_model=JsonAskResponse)
 async def ask_json(req: AskRequest):
     r = _get_rag()
+    if len(req.images) > MAX_IMAGES:
+        raise HTTPException(status_code=422, detail=f"最多支持 {MAX_IMAGES} 张图片")
     history = [h.model_dump() for h in req.history] if req.history else None
+    images = req.images or None
     result = r.ask_json(
         question=req.question,
         top_k=req.top_k,
         history=history,
         use_reranker=req.use_reranker,
+        images=images,
     )
     return JsonAskResponse(**result)
 

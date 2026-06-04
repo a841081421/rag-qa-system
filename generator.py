@@ -7,7 +7,7 @@ import re
 from typing import Generator
 
 from openai import OpenAI, APIError
-from config import DEEPSEEK_API_KEY, DEEPSEEK_BASE_URL
+from config import DEEPSEEK_API_KEY, DEEPSEEK_BASE_URL, VL_MODEL_NAME
 
 SYSTEM_PROMPT = """你是一个 AI 技术知识助手。请基于提供的参考资料回答用户问题。
 
@@ -41,6 +41,7 @@ def _build_messages(
     contexts: list[str],
     history: list[dict] | None = None,
     json_mode: bool = False,
+    images: list[str] | None = None,
 ) -> list[dict]:
     system = JSON_SYSTEM_PROMPT if json_mode else SYSTEM_PROMPT
     messages = [{"role": "system", "content": system}]
@@ -52,8 +53,15 @@ def _build_messages(
     context_text = "\n\n---\n\n".join(
         f"[来源 {i + 1}]\n{ctx}" for i, ctx in enumerate(contexts)
     )
-    user_content = CONTEXT_PROMPT_TEMPLATE.format(context=context_text, query=query)
-    messages.append({"role": "user", "content": user_content})
+    user_text = CONTEXT_PROMPT_TEMPLATE.format(context=context_text, query=query)
+
+    if images:
+        content = [{"type": "text", "text": user_text}]
+        for img in images:
+            content.insert(0, {"type": "image_url", "image_url": {"url": img}})
+        messages.append({"role": "user", "content": content})
+    else:
+        messages.append({"role": "user", "content": user_text})
     return messages
 
 
@@ -66,11 +74,13 @@ class Generator:
         query: str,
         contexts: list[str],
         history: list[dict] | None = None,
+        images: list[str] | None = None,
     ) -> str:
-        messages = _build_messages(query, contexts, history)
+        messages = _build_messages(query, contexts, history, images=images)
+        model = VL_MODEL_NAME if images else "deepseek-chat"
         try:
             response = self.client.chat.completions.create(
-                model="deepseek-chat",
+                model=model,
                 messages=messages,
                 temperature=0.3,
                 max_tokens=2048,
@@ -87,11 +97,13 @@ class Generator:
         query: str,
         contexts: list[str],
         history: list[dict] | None = None,
+        images: list[str] | None = None,
     ) -> Generator[str, None, None]:
-        messages = _build_messages(query, contexts, history)
+        messages = _build_messages(query, contexts, history, images=images)
+        model = VL_MODEL_NAME if images else "deepseek-chat"
         try:
             stream = self.client.chat.completions.create(
-                model="deepseek-chat",
+                model=model,
                 messages=messages,
                 temperature=0.3,
                 max_tokens=2048,
@@ -109,11 +121,13 @@ class Generator:
         query: str,
         contexts: list[str],
         history: list[dict] | None = None,
+        images: list[str] | None = None,
     ) -> dict:
-        messages = _build_messages(query, contexts, history, json_mode=True)
+        messages = _build_messages(query, contexts, history, json_mode=True, images=images)
+        model = VL_MODEL_NAME if images else "deepseek-chat"
         try:
             response = self.client.chat.completions.create(
-                model="deepseek-chat",
+                model=model,
                 messages=messages,
                 temperature=0.3,
                 max_tokens=2048,
