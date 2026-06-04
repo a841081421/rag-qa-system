@@ -10,6 +10,7 @@ DEEPSEEK_BASE_URL = os.getenv("DEEPSEEK_BASE_URL", "https://api.deepseek.com")
 # ── Models ──
 EMBED_MODEL_NAME = os.getenv("EMBED_MODEL_NAME", "BAAI/bge-small-zh-v1.5")
 RERANKER_MODEL_NAME = os.getenv("RERANKER_MODEL_NAME", "BAAI/bge-reranker-v2-m3")
+CHAT_MODEL_NAME = os.getenv("CHAT_MODEL_NAME", "deepseek-chat")
 VL_MODEL_NAME = os.getenv("VL_MODEL_NAME", "deepseek-chat")
 
 # ── Paths ──

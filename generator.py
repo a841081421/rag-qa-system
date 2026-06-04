@@ -7,7 +7,7 @@ import re
 from typing import Generator
 
 from openai import OpenAI, APIError
-from config import DEEPSEEK_API_KEY, DEEPSEEK_BASE_URL, VL_MODEL_NAME
+from config import DEEPSEEK_API_KEY, DEEPSEEK_BASE_URL, CHAT_MODEL_NAME, VL_MODEL_NAME
 
 SYSTEM_PROMPT = """你是一个 AI 技术知识助手。请基于提供的参考资料回答用户问题。
 
@@ -77,7 +77,7 @@ class Generator:
         images: list[str] | None = None,
     ) -> str:
         messages = _build_messages(query, contexts, history, images=images)
-        model = VL_MODEL_NAME if images else "deepseek-chat"
+        model = VL_MODEL_NAME if images else CHAT_MODEL_NAME
         try:
             response = self.client.chat.completions.create(
                 model=model,
@@ -100,7 +100,7 @@ class Generator:
         images: list[str] | None = None,
     ) -> Generator[str, None, None]:
         messages = _build_messages(query, contexts, history, images=images)
-        model = VL_MODEL_NAME if images else "deepseek-chat"
+        model = VL_MODEL_NAME if images else CHAT_MODEL_NAME
         try:
             stream = self.client.chat.completions.create(
                 model=model,
@@ -124,7 +124,7 @@ class Generator:
         images: list[str] | None = None,
     ) -> dict:
         messages = _build_messages(query, contexts, history, json_mode=True, images=images)
-        model = VL_MODEL_NAME if images else "deepseek-chat"
+        model = VL_MODEL_NAME if images else CHAT_MODEL_NAME
         try:
             response = self.client.chat.completions.create(
                 model=model,

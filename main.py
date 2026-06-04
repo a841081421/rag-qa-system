@@ -69,6 +69,7 @@ def _get_rag() -> RAG:
 
 
 MAX_IMAGES = 3
+MAX_IMAGE_BYTES = 7_000_000  # ~5.3MB base64
 
 
 # ── Static frontend ──
@@ -134,9 +135,11 @@ async def clear_documents():
 
 @app.post("/api/ask", response_model=AskResponse)
 async def ask(req: AskRequest):
-    r = _get_rag()
     if len(req.images) > MAX_IMAGES:
         raise HTTPException(status_code=422, detail=f"最多支持 {MAX_IMAGES} 张图片")
+    if any(len(img) > MAX_IMAGE_BYTES for img in req.images):
+        raise HTTPException(status_code=422, detail="单张图片不能超过 4MB")
+    r = _get_rag()
     history = [h.model_dump() for h in req.history] if req.history else None
     images = req.images or None
     result = r.ask(
@@ -153,9 +156,11 @@ async def ask(req: AskRequest):
 
 @app.post("/api/ask/stream")
 async def ask_stream(req: AskRequest):
-    r = _get_rag()
     if len(req.images) > MAX_IMAGES:
         raise HTTPException(status_code=422, detail=f"最多支持 {MAX_IMAGES} 张图片")
+    if any(len(img) > MAX_IMAGE_BYTES for img in req.images):
+        raise HTTPException(status_code=422, detail="单张图片不能超过 4MB")
+    r = _get_rag()
     history = [h.model_dump() for h in req.history] if req.history else None
     images = req.images or None
 
@@ -181,9 +186,11 @@ async def ask_stream(req: AskRequest):
 
 @app.post("/api/ask/json", response_model=JsonAskResponse)
 async def ask_json(req: AskRequest):
-    r = _get_rag()
     if len(req.images) > MAX_IMAGES:
         raise HTTPException(status_code=422, detail=f"最多支持 {MAX_IMAGES} 张图片")
+    if any(len(img) > MAX_IMAGE_BYTES for img in req.images):
+        raise HTTPException(status_code=422, detail="单张图片不能超过 4MB")
+    r = _get_rag()
     history = [h.model_dump() for h in req.history] if req.history else None
     images = req.images or None
     result = r.ask_json(
